@@ -1,48 +1,99 @@
 ﻿@page "/"
+@using Grpc.Core
+@using Grpc.Net.Client
+@using Grpc.Net.Client.Web
 @using GrpcExamples.Server
-@inject Greeter.GreeterClient client;
+@using System.Collections.ObjectModel
+@using System.Diagnostics
 
-<PageTitle>Index</PageTitle>
+<div>
+    <span>Address</span>
+    <input type="text" @bind-value="address" />
+</div>
 
-<h1>Hello, world!</h1>
+<div>
+    <span>Name</span>
+    <input type="text" @bind-value="name" />
+</div>
 
-Welcome to your new app.
+<div>
+    <span>Age</span>
+    <input type="text" @bind-value="age" />
+</div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
-
+<button @onclick="Connect">Connect</button>
+<button @onclick="SendAsync">Send</button>
 <h1>Lines</h1>
 <div>
-@foreach(var line in lines)
-{
-    <div>@line</div>
-}
+    @foreach (var line in lines)
+    {
+        <div>@line</div>
+    }
 </div>
 
 
 @code {
-    private List<string> lines = new List<string>();
+    private string address = "https://localhost:7044";
+    private string name;
+    private int age;
 
-    protected override async Task OnInitializedAsync()
+    private ObservableCollection<string> lines = new ObservableCollection<string>();
+
+    private AsyncServerStreamingCall<HelloReply> stream;
+    private Task listeningTask;
+    private Greeter.GreeterClient client;
+
+    private async void SendAsync()
     {
+        Stopwatch sw = Stopwatch.StartNew();
         try
         {
-            var result = await client.SayHelloAsync(new HelloRequest { Name = "World" });
+            Log($"Calling server with name {name}");
 
-            Log(System.Text.Json.JsonSerializer.Serialize(result));
-
-            await base.OnInitializedAsync();
-
-        } 
+            await client.SayHelloAsync(new HelloRequest
+                {
+                    Name = name,
+                    Age = age,
+                    Advanced = new HelloRequestAdvanced
+                    {
+                        From = name,
+                        To = "Someone",
+                        Message = $"I am age {age}"
+                    }
+                });
+        }
         catch (Exception ex)
         {
-            Log("Error: " + ex.Message);
+            Log("Error: " + ex.ToString());
         }
+        finally
+        {
+            Log($"Duration {sw.ElapsedMilliseconds}ms");
+        }
+    }
+
+    private void Connect()
+    {
+        Log($"Connecting to {address}");
+
+        var httpClient = new HttpClient(new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler()));
+        var channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions { HttpClient = httpClient });
+        client = new Greeter.GreeterClient(channel);
+        stream = client.SayHelloStream2(new SayHelloStream2Request());
+        listeningTask = Task.Run(async () =>
+        {
+            while (await stream.ResponseStream.MoveNext())
+            {
+                var result = stream.ResponseStream.Current;
+                await InvokeAsync(() => Log(System.Text.Json.JsonSerializer.Serialize(result)));
+            }
+        });
     }
 
     private void Log(object o)
     {
-        lines.Add($"{DateTime.Now:HH:mm:ss} | {o ?? "NULL"} {Environment.NewLine}");
-        ShouldRender();
+        lines.Add($"{DateTime.Now:HH:mm:ss:fff} | {o ?? "NULL"} {Environment.NewLine}");
+        StateHasChanged();
     }
 
 }

@@ -10,6 +10,8 @@ service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
 
   rpc SayHelloStream (stream HelloRequest) returns (stream HelloReply);
+
+  rpc SayHelloStream2 (SayHelloStream2Request) returns (stream HelloReply);
 }
 
 // The request message containing the user's name.
@@ -52,4 +54,8 @@ message HelloReplyAdvanced {
   string from = 1;
   string message = 2;
   string to = 3;	
+}
+
+message SayHelloStream2Request {
+	
 }

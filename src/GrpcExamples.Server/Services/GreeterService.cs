@@ -11,22 +11,30 @@ namespace GrpcExamples.Server.Services
             _logger = logger;
         }
 
-        public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
+        public override async Task SayHelloStream2(SayHelloStream2Request request, IServerStreamWriter<HelloReply> responseStream, ServerCallContext context)
         {
-            if(request.Age < 18)
+            try
             {
-                return Task.FromResult(new HelloReply
+                connections.Add(responseStream);
+
+                TaskCompletionSource tcs = new TaskCompletionSource();
+                context.CancellationToken.Register(() =>
                 {
-                    Message = "POGGERS " + request.Name
+                    tcs.TrySetCanceled();
                 });
-            } 
-            else
-            {
-                return Task.FromResult(new HelloReply
-                {
-                    Message = "Hello " + request.Name
-                });
+                await tcs.Task;
             }
+            finally
+            {
+                connections.Remove(responseStream);
+            }
+        }
+
+        public override async Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
+        {
+            var reply = BuildReply(request);
+            await SendReplyToAllAsync(BuildReply(request));
+            return reply;
         }
 
         private static readonly List<IServerStreamWriter<HelloReply>> connections = new List<IServerStreamWriter<HelloReply>>();
@@ -40,49 +48,59 @@ namespace GrpcExamples.Server.Services
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
-                    HelloReply reply;
-
-                    if (request.Age < 18)
-                    {
-                        reply = new HelloReply
-                        {
-                            Message = "POGGERS " + request.Name
-                        };
-                    }
-                    else
-                    {
-                        reply = new HelloReply
-                        {
-                            Message = "Hello " + request.Name
-                        };
-                    }
-
-
-                    switch (request.RequestCase)
-                    {   
-                        case HelloRequest.RequestOneofCase.Standard:
-                            reply.Standard = new HelloReplyStandard
-                            {
-                                Message = "Hello " + request.Name
-                            };
-                            break;
-                        case HelloRequest.RequestOneofCase.Advanced:
-                            reply.Advanced = new HelloReplyAdvanced
-                            {
-                                Message = $"[{request.Advanced.From}] (to {request.Advanced.To}) {request.Advanced.Message}"
-                            };
-                            break;
-                    }
-
-                    foreach (var connection in connections)
-                    {
-                        await connection.WriteAsync(reply);
-                    }
+                    await SendReplyToAllAsync(BuildReply(request));
                 }
             }
             finally
             {
                 connections.Remove(responseStream);
+            }
+        }
+
+        private HelloReply BuildReply(HelloRequest request)
+        {
+            HelloReply reply;
+
+            if (request.Age < 18)
+            {
+                reply = new HelloReply
+                {
+                    Message = "POGGERS " + request.Name
+                };
+            }
+            else
+            {
+                reply = new HelloReply
+                {
+                    Message = "Hello " + request.Name
+                };
+            }
+
+
+            switch (request.RequestCase)
+            {
+                case HelloRequest.RequestOneofCase.Standard:
+                    reply.Standard = new HelloReplyStandard
+                    {
+                        Message = "Hello " + request.Name
+                    };
+                    break;
+                case HelloRequest.RequestOneofCase.Advanced:
+                    reply.Advanced = new HelloReplyAdvanced
+                    {
+                        Message = $"[{request.Advanced.From}] (to {request.Advanced.To}) {request.Advanced.Message}"
+                    };
+                    break;
+            }
+
+            return reply;
+        }
+        
+        private static async Task SendReplyToAllAsync(HelloReply reply)
+        {
+            foreach (var connection in connections)
+            {
+                await connection.WriteAsync(reply);
             }
         }
     }

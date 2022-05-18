@@ -56,7 +56,7 @@ namespace GrpcExamples.DesktopClient
         {
             LogTextBox.Dispatcher.Invoke(() =>
             {
-                LogTextBox.AppendText($"{DateTime.Now:HH:mm:ss} | {o ?? "NULL"} {Environment.NewLine}");
+                LogTextBox.AppendText($"{DateTime.Now:HH:mm:ss:fff} | {o ?? "NULL"} {Environment.NewLine}");
                 LogTextBox.ScrollToEnd();
             });
         }
