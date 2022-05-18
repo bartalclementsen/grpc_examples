@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using GrpcExamples.Server
+@inject Greeter.GreeterClient client;
 
 <PageTitle>Index</PageTitle>
 
@@ -7,3 +9,40 @@
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?" />
+
+<h1>Lines</h1>
+<div>
+@foreach(var line in lines)
+{
+    <div>@line</div>
+}
+</div>
+
+
+@code {
+    private List<string> lines = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await client.SayHelloAsync(new HelloRequest { Name = "World" });
+
+            Log(System.Text.Json.JsonSerializer.Serialize(result));
+
+            await base.OnInitializedAsync();
+
+        } 
+        catch (Exception ex)
+        {
+            Log("Error: " + ex.Message);
+        }
+    }
+
+    private void Log(object o)
+    {
+        lines.Add($"{DateTime.Now:HH:mm:ss} | {o ?? "NULL"} {Environment.NewLine}");
+        ShouldRender();
+    }
+
+}
