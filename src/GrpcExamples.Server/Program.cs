@@ -12,7 +12,7 @@ builder.Services.AddCors(o => o.AddPolicy("AllowAll", builder =>
 }));
 
 // Add services to the container.
-builder.Services.AddGrpc();
+builder.Services.AddGrpc().AddJsonTranscoding();
 builder.Services.AddGrpcReflection();
 
 var app = builder.Build();
