@@ -9,14 +9,13 @@
         Height="450"
         Width="800">
     <DockPanel>
-        <Grid DockPanel.Dock="Top" Margin="0 0 0 10">
+        <Grid DockPanel.Dock="Top"
+              Margin="0 0 0 10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
                 <RowDefinition Height="Auto"></RowDefinition>
                 <RowDefinition Height="Auto"></RowDefinition>
                 <RowDefinition Height="Auto"></RowDefinition>
@@ -57,7 +56,7 @@
                     Grid.Column="1"
                     x:Name="ConnectButton"
                     Click="ConnectButton_Click">Connect</Button>
-            
+
             <Button Grid.Row="4"
                     Grid.Column="1"
                     x:Name="SendButton"

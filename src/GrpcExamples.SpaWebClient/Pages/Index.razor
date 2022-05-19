@@ -31,17 +31,16 @@
     }
 </div>
 
-
 @code {
     private string address = "https://localhost:7044";
-    private string name;
+    private string? name;
     private int age;
 
     private ObservableCollection<string> lines = new ObservableCollection<string>();
 
-    private AsyncServerStreamingCall<HelloReply> stream;
-    private Task listeningTask;
-    private Greeter.GreeterClient client;
+    private AsyncServerStreamingCall<HelloReply>? stream;
+    private Task? listeningTask;
+    private Greeter.GreeterClient? client;
 
     private async void SendAsync()
     {
@@ -95,5 +94,4 @@
         lines.Add($"{DateTime.Now:HH:mm:ss:fff} | {o ?? "NULL"} {Environment.NewLine}");
         StateHasChanged();
     }
-
 }

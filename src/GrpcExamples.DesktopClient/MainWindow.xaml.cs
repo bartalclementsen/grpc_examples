@@ -7,19 +7,18 @@ using System.Windows;
 
 namespace GrpcExamples.DesktopClient
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        private GrpcClientCore.GrpcServiceProvider provider;
-        private Greeter.GreeterClient client;
+        private GrpcClientCore.GrpcServiceProvider? provider;
+        private Greeter.GreeterClient? client;
+        private AsyncDuplexStreamingCall<HelloRequest, HelloReply>? stream;
+        private Task? listeningTask;
 
         public MainWindow()
         {
             InitializeComponent();
         }
- 
+
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -27,9 +26,11 @@ namespace GrpcExamples.DesktopClient
             {
                 Log($"Calling server with name {NameTextbox.Text}");
 
+                // Using old one
                 //var result = await client.SayHelloAsync(new HelloRequest { Name = NameTextbox.Text, Age = int.Parse(AgeTextbox.Text) });
                 //Log(System.Text.Json.JsonSerializer.Serialize(result));
 
+                // using new one
                 await stream.RequestStream.WriteAsync(new HelloRequest
                 {
                     Name = NameTextbox.Text,
@@ -61,19 +62,15 @@ namespace GrpcExamples.DesktopClient
             });
         }
 
-        private AsyncDuplexStreamingCall<GrpcExamples.Server.HelloRequest, GrpcExamples.Server.HelloReply> stream;
-        private Task listeningTask;
-        
-        
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             Log($"Connecting to {ServerAddressTextbox.Text}");
-            if(provider != null)
+            if (provider != null)
             {
                 provider.Dispose();
                 provider = null;
             }
-            
+
             provider = new GrpcClientCore.GrpcServiceProvider(ServerAddressTextbox.Text);
             client = provider.GetGreeterClient();
 
